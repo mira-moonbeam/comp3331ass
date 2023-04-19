@@ -60,40 +60,46 @@ class Sender:
         self.log("snd", 3, seq_num, 0)
 
     def connection_establish(self):
-        retry_count = 0
         self.start_time = time.time()
-        while retry_count < 3:
+        while True:
+            self.send_syn(self.ISN)
+
             try:
-                self.send_syn(self.ISN)
-                
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
 
-                if segment.segment_type==1:
+                if segment.segment_type == 1:
                     self.log("rcv", 1, segment.seq_num, 0)
-                    
+
                     self.next_seq_num = self.ISN + 1
                     return True
-                
+
             except socket.timeout:
                 print("SOCKET TIMEOUT DURING CONNECTION ESTABLISHING")
-                retry_count += 1
-        
-        return False
-    
+
     def connection_terminate(self):
-        self.send_fin(self.next_seq_num)
+        reset = 0
+        while not self.fin_ack_received.is_set() and reset < 3:
+            self.send_fin(self.next_seq_num)
 
-        # Wait for the FIN-ACK to be received in the handle_ack() function
-        self.fin_ack_received.wait()
+            try:
+                data, _ = self.sock.recvfrom(4096)
+                segment = STPSegment.from_bytes(data)
 
-        self.next_seq_num = self.next_seq_num + 1
+                if segment.segment_type == 1 and self.next_seq_num + 1 == segment.seq_num:
+                    self.log("rcv", 1, segment.seq_num, 0)
+                    self.fin_ack_received.set()
 
-        # Set the connection_terminated flag to break the handle_ack() loop
+            except socket.timeout:
+                print("SOCKET TIMEOUT DURING CONNECTION TERMINATION")
+                reset += 1
+
+        self.next_seq_num += 1
         self.connection_terminated.set()
 
+
     def handle_ack(self):
-        while not self.connection_terminated.is_set():  # Modify the loop condition
+        while not self.connection_terminated.is_set():
             try:
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
@@ -102,7 +108,7 @@ class Sender:
                     with self.lock:
                         self.log("rcv", 1, segment.seq_num, 0)
 
-                        if segment.seq_num > self.window_base:
+                        if segment.seq_num >= self.window_base:
                             self.window_base = segment.seq_num
 
                             # Remove acknowledged segments from the window
@@ -114,7 +120,13 @@ class Sender:
                             self.fin_ack_received.set()  # Set the flag for FIN-ACK
 
             except socket.timeout:
-                continue
+                # Retransmit unacknowledged segments
+                current_time = time.time()
+                for seq_num, (segment, timestamp) in self.window.items():
+                    if current_time - timestamp > self.rto:
+                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                        self.log("snd", 0, seq_num, len(segment.payload))
+                        self.window[seq_num] = (segment, current_time)
 
 
     def send_data(self):
