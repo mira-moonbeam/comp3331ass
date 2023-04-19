@@ -50,8 +50,7 @@ class Sender:
     def send_syn(self, seq_num):
         segment = STPSegment(seq_num=seq_num, segment_type=2)
         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-        self.log("snd", 2, seq_num, 0)
-        
+        self.log("snd", 2, seq_num, 0)     
 
     def send_fin(self, seq_num):
         segment = STPSegment(seq_num=seq_num, segment_type=3)
@@ -97,7 +96,6 @@ class Sender:
         self.next_seq_num += 1
         self.connection_terminated.set()
 
-
     def handle_ack(self):
         while not self.connection_terminated.is_set():
             try:
@@ -127,7 +125,6 @@ class Sender:
                         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
                         self.log("snd", 0, seq_num, len(segment.payload))
                         self.window[seq_num] = (segment, current_time)
-
 
     def send_data(self):
         with open(self.file_to_send, "rb") as file:
@@ -169,8 +166,7 @@ class Sender:
 
         if self.connection_terminate():  # Check if the connection has been terminated
             self.connection_terminated.set()
-
-        
+ 
 def main():
     parser = argparse.ArgumentParser(description='Sender')
     parser.add_argument('sender_port', type=int, help='Sender port number')

@@ -48,8 +48,6 @@ class Receiver:
         else:
             self.log("drp", 1, seq_num, 0)
 
-        
-
     def send_cumulative_ack(self):
         if rnd.random() > self.rlp:
             segment = STPSegment(seq_num=self.sequence, segment_type=1)
@@ -57,8 +55,6 @@ class Receiver:
             self.log("snd", 1, self.sequence, 0)
         else:
             self.log("drp", 1, self.sequence, 0)
-
-        
 
     def get_bytes(self, s):
         return len(s.encode('utf-8'))
@@ -141,10 +137,6 @@ class Receiver:
 
             if segment.segment_type == 3:
                 break
-
-                        
-
-                    
 
 def main():
     parser = argparse.ArgumentParser(description='Simple Stop-and-Wait Receiver')
