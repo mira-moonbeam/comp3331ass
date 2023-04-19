@@ -3,6 +3,7 @@ import time
 import socket
 import argparse
 import random as rnd
+import threading
 from STPSegment import STPSegment
 
 class Receiver:
@@ -48,63 +49,85 @@ class Receiver:
 
         self.log("snd", 1, seq_num, 0)
 
+    def send_cumulative_ack(self):
+        if rnd.random() > self.rlp:
+            segment = STPSegment(seq_num=self.sequence, segment_type=1)
+            self.sock.sendto(segment.to_bytes(), ('localhost', self.sender_port))
+        else:
+            self.log("drp", 1, self.sequence, 0)
+
+        self.log("snd", 1, self.sequence, 0)
+
     def get_bytes(self, s):
         return len(s.encode('utf-8'))
 
     def receive_data(self):
+        buffer = {}
+        ack_timer = None
+        ack_timeout = 0.1  # Set the ACK timeout (in seconds)
+
+        def reset_ack_timer():
+            nonlocal ack_timer
+            if ack_timer is not None:
+                ack_timer.cancel()
+            ack_timer = threading.Timer(ack_timeout, self.send_cumulative_ack)
+            ack_timer.start()
+        
         while True:
-            # receiving a syn
             data, _ = self.sock.recvfrom(1024)
             segment = STPSegment.from_bytes(data)
-
             self.start_time = time.time()
-            # if it's a SYN AND it's not dropped
-            if segment.segment_type==2 and rnd.random() > self.flp:
 
+            if segment.segment_type == 2 and rnd.random() > self.flp:
                 self.log("rcv", 2, segment.seq_num, 0)
                 self.sequence = segment.seq_num + 1
                 self.send_ack(self.sequence)
 
-                with open(self.file_to_write, 'w') as file:
+                with open(self.file_to_write, 'wb') as file:
                     while True:
                         data, _ = self.sock.recvfrom(4096)
                         segment = STPSegment.from_bytes(data)
 
-                        if segment.segment_type==3:
-                                if rnd.random() > self.flp:
-                                    print("somehow you made it lol")
-                                    self.log("rcv", 3, segment.seq_num, 0)
-                                    # Send ACK for the FIN segment
-                                    self.sequence = self.sequence + 1
-                                    self.send_ack(self.sequence)
-                                    break
-                                else:
-                                    self.log("drp", 3, segment.seq_num, 0)
+                        if segment.segment_type == 3:
+                            if rnd.random() > self.flp:
+                                self.log("rcv", 3, segment.seq_num, 0)
+                                self.sequence = self.sequence + 1
+                                self.send_ack(self.sequence)
+                                break
+                            else:
+                                self.log("drp", 3, segment.seq_num, 0)
 
-                        else:
+                        elif segment.segment_type == 0:
                             payload_length = len(segment.payload)
 
-                            # Check for unnecessary retransmissions
-                            if segment.seq_num <= self.last_received_seq:
-                                # Drop the retransmitted packet and send an ACK for the next expected sequence number
-                                self.log("drp", 0, segment.seq_num, payload_length)
-                                self.send_ack(self.sequence)
-                            else:
-                                if rnd.random() > self.flp:
-                                    self.log("rcv", 0, segment.seq_num, payload_length)
-                                    file.write(segment.payload.decode('utf-8') + '\n')
+                            if rnd.random() > self.flp:
+                                self.log("rcv", 0, segment.seq_num, payload_length)
+                                buffer[segment.seq_num] = segment.payload
 
-                                    self.last_received_seq = segment.seq_num
-                                    self.sequence = self.sequence + payload_length
-                                    self.send_ack(self.sequence)
-                                else:
-                                    print("lmao packet d rop loser")
-                                    self.log("drp", 0, segment.seq_num, payload_length)
+                                # Check if the received segment is the expected one
+                                if segment.seq_num == self.sequence:
+                                    # Write all continuous segments to the file and update the sequence number
+                                    while self.sequence in buffer:
+                                        file.write(buffer[self.sequence])
+                                        del buffer[self.sequence]
+                                        self.sequence += payload_length
+
+                                    reset_ack_timer()
+                                elif segment.seq_num > self.sequence:
+                                    # If the received segment is out-of-order, send a cumulative ACK immediately
+                                    self.send_cumulative_ack()
+
+                            else:
+                                self.log("drp", 0, segment.seq_num, payload_length)
+
+                    if ack_timer is not None:
+                        ack_timer.cancel()
             else:
                 self.log("drp", 2, segment.seq_num, 0)
 
-            if segment.segment_type==3:
+            if segment.segment_type == 3:
                 break
+
                         
 
                     

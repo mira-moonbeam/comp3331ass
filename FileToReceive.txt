@@ -13,7 +13,6 @@ Non-CSE Student Version: The rationale for this option is that students enrolled
 does not include a computer science component have had very limited exposure to programming
 and in particular working on complex programming assignments. A Non-CSE student is a student
 who is not enrolled in a CSE program (single or double degree). Examples would include students
-
 enrolled exclusively in a single degree program such as Mechatronics or Aerospace or Actuarial
 Studies or Law. Students enrolled in dual degree programs that include a CSE program as one
 of the degrees do not qualify. Any student who meets this criterion and wishes to avail of this
@@ -25,8 +24,7 @@ assignment unless they have sought explicit permission. No exceptions.
 STP should be implemented as two separate programs: Sender and Receiver. You should
 implement unidirectional transfer of data from the sender to the receiver. As illustrated in Figure 1,
 data segments will flow from Sender to Receiver while ACK segments will flow from receiver to
-sender. The sender and receiver programs will be run
- from different terminals on the same machine,
+sender. The sender and receiver programs will be run from different terminals on the same machine,
 so you can use localhost, i.e., 127.0.0.1 as the IP address for the sender and receiver in your
 program. Let us reiterate this, STP must be implemented on top of UDP. Do not use TCP sockets.
 If you use TCP, you will not receive any marks for your assignment.
@@ -40,7 +38,6 @@ Data
 Ack
 Sender Receiver
 UDP Socket1
-
 sender_port specified as argument
 UDP Socket 2
 receiver_port specified as argument
@@ -57,8 +54,7 @@ range) for the sender and receiver ports.
 2. receiver_port: the UDP port number on which receiver is expecting to receive STP
 segments from the sender. The receiver should send ACK segments through this port to the
 sender. We recommend using a random port number in the same range noted above.
-3. FileToSend.txt: the name of the text file that must be transf
-erred from sender to receiver
+3. FileToSend.txt: the name of the text file that must be transferred from sender to receiver
 using your reliable transport protocol. You may assume that the file included in the argument
 will be available in the current working directory of the sender with the “read” access
 permissions set (execute “chmod +r FileToSend.txt” at the terminal in the directory
@@ -70,11 +66,9 @@ greater than or equal to 1000 bytes (MSS) and does not include STP headers. When
 max_win is set to 1000 bytes, STP will effectively behave as a stop-and-wait protocol,
 wherein the sender transmits one data segment at any given time and waits for the
 data is received in order, then it can be written to the file, else if out of order, then it will remain in
-the buffer until the missing data is receiv
-ed. An appropriate ACK segment should be generated. The
+the buffer until the missing data is received. An appropriate ACK segment should be generated. The
 receiver next calls the function that simulates ACK segment loss with a probability rlp. If the
 ACK is to be dropped, then it should not be transmitted and nothing else needs to be done. Here we
 are emulating a scenario where the ACK segment is transmitted but dropped by the underlying
 channel and thus never reaches the sender. If the ACK is not dropped, then it should be
 encapsulated in a UDP segment and sent through the receiver socket to the sender.
-
