@@ -3,7 +3,6 @@ import socket
 import time
 import argparse
 from STPSegment import STPSegment
-import threading
 
 class Sender:
     def __init__(self, sender_port, receiver_port, file_to_send, max_win, rto):
@@ -19,11 +18,6 @@ class Sender:
         self.ISN = 0
         self.log_file = open("sender_log.txt", "w")
         self.start_time = None
-
-        self.window_base = 0
-        self.next_seq_num = 0
-        self.lock = threading.Lock()
-        self.window = {}
 
     def log(self, snd_rcv, packet_type, seq_num, num_bytes):
         current_time = time.time()
@@ -68,7 +62,7 @@ class Sender:
                 if segment.segment_type==1:
                     self.log("rcv", 1, segment.seq_num, 0)
                     
-                    self.next_seq_num = self.ISN + 1
+                    self.ISN = self.ISN + 1
                     return True
                 
             except socket.timeout:
@@ -81,14 +75,14 @@ class Sender:
         retry_count = 0
         while retry_count < 3:
             try:
-                self.send_fin(self.next_seq_num)
-                print(self.next_seq_num)
+                self.send_fin(self.ISN)
+                
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
-                if segment.segment_type==1 and segment.seq_num==self.next_seq_num + 1:
+                if segment.segment_type==1 and segment.seq_num==self.ISN + 1:
                     self.log("rcv", 1, segment.seq_num, 0)
 
-                    self.next_seq_num = self.next_seq_num + 1
+                    self.ISN = self.ISN + 1
                     return True
                 
             except socket.timeout:
@@ -97,66 +91,47 @@ class Sender:
         
         return False
 
-    def handle_ack(self):
-        while True:
-            try:
-                data, _ = self.sock.recvfrom(4096)
-                segment = STPSegment.from_bytes(data)
-
-                if segment.segment_type == 1:
-                    with self.lock:
-                        self.log("rcv", 1, segment.seq_num, 0)
-
-                        if segment.seq_num > self.window_base:
-                            self.window_base = segment.seq_num
-                            # Remove acknowledged segments from the window
-                            for seq_num in range(self.window_base - self.max_win, self.window_base):
-                                if seq_num in self.window:
-                                    del self.window[seq_num]
-
-            except socket.timeout:
-                continue
-
     def send_data(self):
         if self.connection_establish():
-            # Start a thread to handle received ACKs
-            ack_thread = threading.Thread(target=self.handle_ack, daemon=True)
-            ack_thread.start()
-
             with open(self.file_to_send, 'rb') as file:
-                while True:
-                    with self.lock:
-                        while self.next_seq_num < self.window_base + self.max_win:
-                            filedata = file.read(1000)
+                filedata = file.read(1000)
+                while filedata:
+                    segment = STPSegment(seq_num=self.ISN, payload=filedata, segment_type=0)
+                    self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                    self.log("snd", 0, self.ISN, len(filedata))
+                    # new seq num if the send works
+                    temp_seq = self.ISN + len(filedata)
 
-                            if not filedata:
-                                break
+                    ack_received = False
 
-                            segment = STPSegment(seq_num=self.next_seq_num, payload=filedata, segment_type=0)
+                    while not ack_received:
+                        try:
+                            data, _ = self.sock.recvfrom(4096)
+                            segment = STPSegment.from_bytes(data)
+                            self.log("rcv", 1, segment.seq_num, 0)
+
+                            if segment.seq_num >= temp_seq:
+                                # The seq number in the ack matches or is ahead of the one we are about to send out
+                                ack_received = True
+                                self.ISN = segment.seq_num
+                                temp_seq = segment.seq_num
+                            else:
+                                # oh our dat wasnt lost their ack was lost so now they're ahead of us
+                                pass
+                                
+                        except socket.timeout:
+                            # Didnt receive an ack so we can only assume our sent data was lost so resend
+                            segment = STPSegment(seq_num=self.ISN, payload=filedata, segment_type=0)
                             self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                            self.log("snd", 0, self.next_seq_num, len(filedata))
+                            self.log("snd", 0, self.ISN, len(filedata))
 
-                            self.window[self.next_seq_num] = (time.time(), segment.to_bytes())
-                            self.next_seq_num += len(filedata)
-
-                    if not filedata:
-                        break
-
-                    # Retransmit unacknowledged segments
-                    for seq_num, (timestamp, segment) in self.window.items():
-                        if time.time() - timestamp > float(self.rto):
-                            self.sock.sendto(segment, ('localhost', self.receiver_port))
-                            self.log("snd", 0, seq_num, len(filedata))
-
-            # Wait for the remaining ACKs
-            while self.window_base < self.next_seq_num:
-                time.sleep(0.1)
-
+                    self.ISN = temp_seq
+                    time.sleep(0.05)
+                    filedata = file.read(1000)
+            
+            # Send the end of transmission segment with FIN flag
             if self.connection_terminate():
                 print("COMPLETE PROGRAM")
-                self.log_file.close()
-                
-
              
 
 def main():
