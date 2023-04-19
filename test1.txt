@@ -1,0 +1,74 @@
+
+2
+direction and (ii) ACK segments in the reverse direction. You may assume that the underlying
+channel will never reorder or corrupt STP segments (in both directions).
+Note that it is mandatory that you implement STP over UDP. Do not use TCP sockets. You
+will not receive any mark for this assignment if you use TCP sockets.
+2.1 Learning Objectives
+On completing this assignment, you will gain sufficient expertise in the following skills:
+1. Detailed understanding of how reliable transport protocols such as TCP function.
+2. Socket programming for UDP transport protocol.
+3. Protocol and message design.
+Non-CSE Student Version: The rationale for this option is that students enrolled in a program that
+does not include a computer science component have had very limited exposure to programming
+and in particular working on complex programming assignments. A Non-CSE student is a student
+who is not enrolled in a CSE program (single or double degree). Examples would include students
+enrolled exclusively in a single degree program such as Mechatronics or Aerospace or Actuarial
+Studies or Law. Students enrolled in dual degree programs that include a CSE program as one
+of the degrees do not qualify. Any student who meets this criterion and wishes to avail of this
+option MUST email cs3331@cse.unsw.edu.au to seek approval before 5pm, 17th March (Friday,
+Week 5). If approved, we will send you the specification for the non-CSE version of the
+assignment. We will assume by default that all students are attempting the CSE version of the
+assignment unless they have sought explicit permission. No exceptions.
+3. Assignment Specification
+STP should be implemented as two separate programs: Sender and Receiver. You should
+implement unidirectional transfer of data from the sender to the receiver. As illustrated in Figure 1,
+data segments will flow from Sender to Receiver while ACK segments will flow from receiver to
+sender. The sender and receiver programs will be run from different terminals on the same machine,
+so you can use localhost, i.e., 127.0.0.1 as the IP address for the sender and receiver in your
+program. Let us reiterate this, STP must be implemented on top of UDP. Do not use TCP sockets.
+If you use TCP, you will not receive any marks for your assignment.
+You will find it useful to review Sections 3.5.4 - 3.5.6 of the text (or the relevant parts from the
+Week 5 lecture notes). It may also be useful to review the basic concepts of reliable data transfer
+from Section 3.4 (or relevant parts from the Week 4 lecture notes). Section 3.5 of the textbook
+which covers the bulk of the discussion on TCP is available to download on the assignment page.
+Figure 1: This depicts the assignment setup. A file is to be transferred from the Sender to the Receiver, both running on the same
+machine. Data segments will flow from the sender to receiver, while ACK segments will flow from the receiver to sender.
+Data
+Ack
+Sender Receiver
+UDP Socket1
+sender_port specified as argument
+UDP Socket 2
+receiver_port specified as argument
+3
+3.1 File Names
+The main code for the sender should be contained in the following files: sender.c, or
+Sender.java or sender.py. You may create additional files such as header files or other class
+files and name them as you wish.
+The sender should accept the following four arguments:
+1. sender_port: the UDP port number to be used by the sender to send STP segments to the
+receiver. The sender will receive ACK segments from the receiver through this port. We
+recommend using a random port number between 49152 to 65535 (dynamic port number
+range) for the sender and receiver ports.
+2. receiver_port: the UDP port number on which receiver is expecting to receive STP
+segments from the sender. The receiver should send ACK segments through this port to the
+sender. We recommend using a random port number in the same range noted above.
+3. FileToSend.txt: the name of the text file that must be transferred from sender to receiver
+using your reliable transport protocol. You may assume that the file included in the argument
+will be available in the current working directory of the sender with the “read” access
+permissions set (execute “chmod +r FileToSend.txt” at the terminal in the directory
+containing the file).
+4. max_win: the maximum window size in bytes for the sender window. This should be an
+unsigned integer. Effectively, this is the maximum number of data bytes that the sender can
+transmit in a pipelined manner and for which ACKs are outstanding. max_win must be
+greater than or equal to 1000 bytes (MSS) and does not include STP headers. When
+max_win is set to 1000 bytes, STP will effectively behave as a stop-and-wait protocol,
+wherein the sender transmits one data segment at any given time and waits for the
+data is received in order, then it can be written to the file, else if out of order, then it will remain in
+the buffer until the missing data is received. An appropriate ACK segment should be generated. The
+receiver next calls the function that simulates ACK segment loss with a probability rlp. If the
+ACK is to be dropped, then it should not be transmitted and nothing else needs to be done. Here we
+are emulating a scenario where the ACK segment is transmitted but dropped by the underlying
+channel and thus never reaches the sender. If the ACK is not dropped, then it should be
+encapsulated in a UDP segment and sent through the receiver socket to the sender.
