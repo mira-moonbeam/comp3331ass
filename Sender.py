@@ -60,7 +60,8 @@ class Sender:
 
     def connection_establish(self):
         self.start_time = time.time()
-        while True:
+        reset = 0
+        while reset < 3:
             self.send_syn(self.ISN)
 
             try:
@@ -75,6 +76,7 @@ class Sender:
 
             except socket.timeout:
                 print("SOCKET TIMEOUT DURING CONNECTION ESTABLISHING")
+                reset += 1
 
     def connection_terminate(self):
         reset = 0
@@ -110,7 +112,7 @@ class Sender:
                             self.window_base = segment.seq_num
 
                             # Remove acknowledged segments from the window
-                            seq_nums_to_remove = [seq_num for seq_num in self.window if seq_num < self.window_base]
+                            seq_nums_to_remove = [seq_num for seq_num in list(self.window.keys()) if seq_num < self.window_base]
                             for seq_num in seq_nums_to_remove:
                                 del self.window[seq_num]
 
@@ -118,45 +120,48 @@ class Sender:
                             self.fin_ack_received.set()  # Set the flag for FIN-ACK
 
             except socket.timeout:
-                # Retransmit unacknowledged segments
-                current_time = time.time()
-                for seq_num, (segment, timestamp) in self.window.items():
-                    if current_time - timestamp > self.rto:
-                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                        self.log("snd", 0, seq_num, len(segment.payload))
-                        self.window[seq_num] = (segment, current_time)
+                pass
+            
+            # Retransmit unacknowledged segments
+            current_time = time.time()
+            window_keys = list(self.window.keys())  # Create a copy of dictionary keys
+            for seq_num in window_keys:
+                segment, timestamp = self.window[seq_num]
+                if current_time - timestamp > self.rto:
+                    self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                    self.log("snd", 0, seq_num, len(segment.payload))
+                    self.window[seq_num] = (segment, current_time)
 
     def send_data(self):
         with open(self.file_to_send, "rb") as file:
             while True:
                 with self.lock:
-                    # Check if the current seq_num is within the window
+                    # Send a new packet if the window size is less than the maximum window size
                     if self.next_seq_num < self.window_base + self.max_win:
-                        # Read the next chunk of data from the file
                         data_chunk = file.read(1000)
-                        
+
                         # Break the loop if the file is completely read
                         if not data_chunk:
+                            self.end_of_transmission.set()
                             break
 
-                        # Create a new data packet and send it
+                        # Create a new data packet
                         segment = STPSegment(seq_num=self.next_seq_num, payload=data_chunk)
-                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                        self.log("snd", 0, self.next_seq_num, len(data_chunk))
 
-                        # Add the packet to the window and start its timer
+                        # Send the packet
+                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                        self.log("snd", 0, self.next_seq_num, len(segment.payload))
+
+                        # Add the packet to the timer window
                         self.window[self.next_seq_num] = (segment, time.time())
+
+                        # Update the next sequence number
                         self.next_seq_num += len(data_chunk)
 
-                    # Check for timed-out segments and retransmit them
-                    current_time = time.time()
-                    for seq_num, (segment, timestamp) in self.window.items():
-                        if current_time - timestamp > self.rto:
-                            self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                            self.log("snd", 0, seq_num, len(segment.payload))
-                            self.window[seq_num] = (segment, current_time)
-                
-                self.end_of_transmission.set()
+                    # Wait for a short duration before trying to send the next packet
+                    time.sleep(0.001)
+
+        self.end_of_transmission.set()
 
     def terminate_on_completion(self):
         self.end_of_transmission.wait()
