@@ -80,6 +80,11 @@ class Sender:
                 print("SOCKET TIMEOUT DURING CONNECTION ESTABLISHING")
                 reset += 1
 
+        segment = STPSegment(seq_num=0, segment_type=4)
+        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+        self.log("snd", 4, 0, 0)  
+        print("CONNECTION GONE")
+
     def connection_terminate(self):
         reset = 0
         while not self.fin_ack_received.is_set() and reset < 3:
@@ -97,6 +102,12 @@ class Sender:
             except socket.timeout:
                 print("SOCKET TIMEOUT DURING CONNECTION TERMINATION")
                 reset += 1
+        
+        if not self.fin_ack_received.is_set():
+            segment = STPSegment(seq_num=0, segment_type=4)
+            self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+            self.log("snd", 4, 0, 0)  
+            print("CONNECTION GONE")
 
         self.next_seq_num = (self.next_seq_num + 1) % 2**16
         self.connection_terminated.set()

@@ -66,13 +66,17 @@ class Receiver:
 
 
     def receive_data(self):
-        connection_finished = False
         self.start_time = time.time()
+        syn_ack_sent = False
 
         while True:
-            ready_to_read, _, _ = select.select([self.sock], [], [], 2)
+            timeout = 2 if syn_ack_sent else None
+            ready_to_read, _, _ = select.select([self.sock], [], [], timeout) # please dont ask - i googled it
             if not ready_to_read:
-                break  # Exit the loop if there are no incoming packets after 2 seconds please dont ask i googled how to make this thing wait 2 seocnds
+                if syn_ack_sent:
+                    break  # Exit the loop if there are no incoming packets after 2 seconds
+                else:
+                    continue  # Keep waiting for the SYN packet
 
             data, _ = self.sock.recvfrom(4096)
             segment = STPSegment.from_bytes(data)
@@ -83,6 +87,7 @@ class Receiver:
                     self.log("rcv", 2, segment.seq_num, 0)
                     self.sequence = (segment.seq_num + 1) % 2**16
                     self.send_ack(self.sequence)
+                    syn_ack_sent = True
                 else:
                     self.log("drp", 2, segment.seq_num, 0)
 
