@@ -1,41 +1,38 @@
-snd 0          SYN    44781    0
-snd 100.25     SYN    44781    0
-rcv 100.62     ACK    44782    0
-snd 102.65     DATA   44782    1000
-snd 102.93     DATA   45782    1000
-snd 103.15     DATA   46782    1000
-rcv 103.38     ACK    44782    0
-snd 208.99     DATA   44782    1000
-snd 314.7      DATA   44782    1000
-rcv 315.16     ACK    45782    0
-snd 315.48     DATA   45782    1000
-snd 315.9      DATA   47782    1000
-snd 421.2      DATA   45782    1000
-snd 526.82     DATA   45782    1000
-snd 632.57     DATA   45782    1000
-snd 738.2      DATA   45782    1000
-snd 843.96     DATA   45782    1000
-rcv 844.43     ACK    46782    0
-snd 844.86     DATA   46782    1000
-snd 845.58     DATA   48782    1000
-snd 950.57     DATA   46782    1000
-snd 1056.24    DATA   46782    1000
-snd 1162.03    DATA   46782    1000
-snd 1268.07    DATA   46782    1000
-rcv 1273.48    ACK    47782    0
-snd 1274.67    DATA   49782    519
-rcv 1274.96    ACK    47782    0
-snd 1275.24    DATA   47782    1000
-rcv 1375.61    ACK    48782    0
-snd 1376.03    DATA   48782    1000
-rcv 1476.42    ACK    49782    0
-snd 1576.95    DATA   49782    519
-rcv 1677.38    ACK    50301    0
-snd 1775.49    FIN    50301    0
-rcv 1775.63    ACK    50302    0
+snd 0          SYN    25003    0
+rcv 0.01       ACK    25004    0
+snd 2.05       DATA   25004    1000
+snd 2.36       DATA   26004    1000
+snd 2.62       DATA   27004    1000
+snd 2.87       DATA   28004    1000
+snd 3.14       DATA   29004    1000
+snd 3.39       DATA   30004    519
+rcv 102.47     ACK    26004    0
+snd 303.42     DATA   26004    1000
+snd 504.05     DATA   26004    1000
+snd 704.66     DATA   26004    1000
+snd 905.37     DATA   26004    1000
+snd 1105.96    DATA   26004    1000
+snd 1306.63    DATA   26004    1000
+rcv 1307.04    ACK    27004    0
+snd 1307.32    DATA   27004    1000
+snd 1507.85    DATA   27004    1000
+snd 1708.46    DATA   27004    1000
+snd 1909.13    DATA   27004    1000
+rcv 1909.43    ACK    28004    0
+snd 1909.68    DATA   28004    1000
+rcv 2010.09    ACK    29004    0
+snd 2010.73    DATA   29004    1000
+snd 2211.32    DATA   29004    1000
+snd 2411.96    DATA   29004    1000
+rcv 2512.5     ACK    30004    0
+snd 2513.04    DATA   30004    519
+snd 2713.81    DATA   30004    519
+rcv 2814.42    ACK    30523    0
+snd 2906.72    FIN    30523    0
+rcv 2906.87    ACK    30524    0
 
 --- Statistics ---
 Original Data Transferred: 5519
 Data Segments Sent: 6
 Retransmitted Data Segments: 16
-Duplicate ACKs Received: 1
+Duplicate ACKs Received: 0

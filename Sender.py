@@ -17,19 +17,22 @@ class Sender:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('localhost', self.sender_port))
         self.sock.settimeout(self.rto)
+
+        # Actual variabls i need to use for the code to work
         self.ISN = random.randint(0, 2**16 - 1)
-        self.log_file = open("Sender_log.txt", "w")
-        self.start_time = None
+        self.window_base = 0
+        self.next_seq_num = 0
+        self.window = {}
+        
+        # Threading stuff
         self.end_of_transmission = threading.Event()
         self.connection_terminated = threading.Event()
         self.fin_ack_received = threading.Event()
-
-        self.window_base = 0
-        self.next_seq_num = 0
         self.lock = threading.Lock()
-        self.window = {}
 
         # Tracking variables
+        self.log_file = open("Sender_log.txt", "w")
+        self.start_time = None
         self.original_data_transferred = 0
         self.data_segments_sent = 0
         self.retransmitted_data_segments = 0
@@ -50,7 +53,6 @@ class Sender:
             pack_type = "RESET"
 
         log_str = f"{snd_rcv:<3} {elapsed_time:<10} {pack_type:<6} {seq_num:<8} {num_bytes}\n"
-
         self.log_file.write(log_str)
         self.log_file.flush()
 
@@ -59,7 +61,6 @@ class Sender:
         segment = STPSegment(seq_num=seq_num, segment_type=2)
         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
         self.log("snd", 2, seq_num, 0)
-        
 
     def send_fin(self, seq_num):
         segment = STPSegment(seq_num=seq_num, segment_type=3)
@@ -75,7 +76,7 @@ class Sender:
             if not start_initialized:
                 self.start_time = time.time()
                 start_initialized = True
-                
+
             try:
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
@@ -110,14 +111,12 @@ class Sender:
                     self.end_of_transmission.set()
 
             except socket.timeout:
-                print("SOCKET TIMEOUT DURING CONNECTION TERMINATION")
                 reset += 1
         
         if not self.fin_ack_received.is_set():
             segment = STPSegment(seq_num=0, segment_type=4)
             self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
             self.log("snd", 4, 0, 0)  
-            print("CONNECTION GONE")
 
         self.next_seq_num = (self.next_seq_num + 1) % 2**16
         self.connection_terminated.set()
@@ -201,12 +200,11 @@ class Sender:
                                 self.log("snd", 0, seq_num, len(segment.payload))
                                 self.window[seq_num] = (segment, current_time)
 
-
-
     def send_data(self):
         with open(self.file_to_send, "rb") as file:
             data_chunk = None
-            while True:
+            first_iteration = True
+            while first_iteration or data_chunk:
                 with self.lock:
                     temp_window = []
                     
@@ -214,8 +212,8 @@ class Sender:
                     while self.next_seq_num < (self.window_base + self.max_win) % 2 ** 16:
                         data_chunk = file.read(1000)
 
-                        # Break the loop if the file is completely read
-                        if not data_chunk:
+                        # Send at least one segment, even if the file is empty
+                        if not data_chunk and not first_iteration:
                             self.end_of_transmission.set()
                             break
 
@@ -228,6 +226,8 @@ class Sender:
                         temp_window.append((self.next_seq_num, segment))
                         self.next_seq_num = (self.next_seq_num + len(data_chunk)) % 2**16
 
+                        first_iteration = False
+
                     # Send all packets in the temporary window
                     for seq_num, segment in temp_window:
                         if seq_num < self.window_base:
@@ -235,10 +235,6 @@ class Sender:
 
                         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
                         self.log("snd", 0, seq_num, len(segment.payload))
-
-                        
-                        
-
 
                         # Add the packet to the timer window
                         self.window[seq_num] = (segment, time.time())
@@ -287,8 +283,6 @@ def main():
         termination_thread.join()
 
         sender.log_statistics()
-
-        print("Connection terminated successfully.")
 
 if __name__ == "__main__":
     main()

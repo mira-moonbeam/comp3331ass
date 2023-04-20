@@ -70,8 +70,6 @@ class Receiver:
         self.ack_timer = threading.Timer(self.ack_timeout, self.send_cumulative_ack)
         self.ack_timer.start()
 
-
-
     def receive_data(self):
         
         syn_ack_sent = False
@@ -81,7 +79,7 @@ class Receiver:
             timeout = 2 if syn_ack_sent else None
             ready_to_read, _, _ = select.select([self.sock], [], [], timeout) # please dont ask - i googled it
             if not ready_to_read:
-                if syn_ack_sent:
+                if syn_ack_sent or start_time_initialized:
                     break  # Exit the loop if there are no incoming packets after 2 seconds
                 else:
                     continue  # Keep waiting for the SYN packet
@@ -102,7 +100,6 @@ class Receiver:
                     break
 
             if segment.segment_type == 2:
-                
                 # SYN HANDLE
                 if rnd.random() > self.flp:
                     self.log("rcv", 2, segment.seq_num, 0)
@@ -156,7 +153,6 @@ class Receiver:
                     # Update tracking variables
                     self.data_segments_dropped += 1
 
-
         if self.ack_timer is not None:
             self.ack_timer.cancel()
 
@@ -169,8 +165,6 @@ class Receiver:
         stats = f"\n--- Statistics ---\nOriginal Data Received: {self.original_data_bytes_received}\nOriginal Data Segments Received: {self.original_data_segments_received}\nDuplicate Data Segments Received: {self.duplicate_data_segments_received}\nData Segments Dropped: {self.data_segments_dropped}\nACKs Dropped: {self.ack_segments_dropped}\n"
         self.log_file.write(stats)
         self.log_file.flush()
-
-
 
 def main():
     parser = argparse.ArgumentParser(description='Simple Stop-and-Wait Receiver')
