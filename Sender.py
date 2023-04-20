@@ -58,7 +58,8 @@ class Sender:
     def send_syn(self, seq_num):
         segment = STPSegment(seq_num=seq_num, segment_type=2)
         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-        self.log("snd", 2, seq_num, 0)     
+        self.log("snd", 2, seq_num, 0)
+        
 
     def send_fin(self, seq_num):
         segment = STPSegment(seq_num=seq_num, segment_type=3)
@@ -67,11 +68,14 @@ class Sender:
         self.log("snd", 3, seq_num, 0)
 
     def connection_establish(self):
-        self.start_time = time.time()
+        start_initialized = False
         reset = 0
         while reset < 3:
             self.send_syn(self.ISN)
-
+            if not start_initialized:
+                self.start_time = time.time()
+                start_initialized = True
+                
             try:
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
@@ -85,7 +89,7 @@ class Sender:
 
             except socket.timeout:
                 reset += 1
-
+                
         segment = STPSegment(seq_num=0, segment_type=4)
         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
         self.log("snd", 4, 0, 0)  

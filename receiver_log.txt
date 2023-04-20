@@ -1,37 +1,42 @@
-rcv 403.24     SYN    54962    0
-rcv 503.86     SYN    54962    0
-rcv 604.58     SYN    54962    0
-snd 604.63     ACK    54963    0
-rcv 606.43     DATA   54963    1000
-rcv 606.66     DATA   55963    1000
-drp 606.87     DATA   56963    1000
-snd 706.93     ACK    56963    0
-rcv 710.57     DATA   54963    1000
-drp 716.31     DATA   56963    1000
-rcv 716.7      DATA   57963    1000
-rcv 716.9      DATA   58963    1000
-drp 821.88     DATA   56963    1000
-rcv 927.51     DATA   56963    1000
-snd 1027.85    ACK    57963    0
-rcv 1038.88    DATA   59963    519
-snd 1038.94    ACK    57963    0
-drp 1039.44    DATA   57963    1000
-drp 1140.05    DATA   57963    1000
-drp 1240.66    DATA   57963    1000
-rcv 1341.14    DATA   57963    1000
-rcv 1441.74    DATA   57963    1000
-snd 1441.77    ACK    58963    0
-rcv 1442.58    DATA   58963    1000
-snd 1542.89    ACK    59963    0
-rcv 1643.56    DATA   59963    519
-snd 1743.89    ACK    60482    0
-drp 1840.18    FIN    60482    0
-rcv 1940.79    FIN    60482    0
-snd 1940.85    ACK    60483    0
+drp 0.0        SYN    44781    0
+rcv 100.49     SYN    44781    0
+snd 100.54     ACK    44782    0
+drp 102.87     DATA   44782    1000
+drp 103.13     DATA   45782    1000
+rcv 103.35     DATA   46782    1000
+snd 103.4      ACK    44782    0
+rcv 209.22     DATA   44782    1000
+rcv 314.95     DATA   44782    1000
+snd 314.99     ACK    45782    0
+drp 315.69     DATA   45782    1000
+drp 316.11     DATA   47782    1000
+rcv 421.43     DATA   45782    1000
+rcv 527.06     DATA   45782    1000
+drp 632.8      DATA   45782    1000
+rcv 738.41     DATA   45782    1000
+rcv 844.19     DATA   45782    1000
+snd 844.24     ACK    46782    0
+rcv 845.06     DATA   46782    1000
+drp 845.78     DATA   48782    1000
+drp 950.8      DATA   46782    1000
+rcv 1056.47    DATA   46782    1000
+drp 1162.28    DATA   46782    1000
+rcv 1268.32    DATA   46782    1000
+snd 1268.36    ACK    47782    0
+rcv 1274.89    DATA   49782    519
+snd 1274.95    ACK    47782    0
+rcv 1275.44    DATA   47782    1000
+snd 1375.76    ACK    48782    0
+rcv 1376.24    DATA   48782    1000
+snd 1476.59    ACK    49782    0
+rcv 1577.19    DATA   49782    519
+snd 1677.53    ACK    50301    0
+rcv 1775.73    FIN    50301    0
+snd 1775.79    ACK    50302    0
 
 --- Statistics ---
 Original Data Received: 5519
 Original Data Segments Received: 6
-Duplicate Data Segments Received: 5
-Data Segments Dropped: 6
+Duplicate Data Segments Received: 8
+Data Segments Dropped: 8
 ACKs Dropped: 6

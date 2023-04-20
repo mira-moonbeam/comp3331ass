@@ -73,8 +73,9 @@ class Receiver:
 
 
     def receive_data(self):
-        self.start_time = time.time()
+        
         syn_ack_sent = False
+        start_time_initialized = False
 
         while True:
             timeout = 2 if syn_ack_sent else None
@@ -88,6 +89,12 @@ class Receiver:
             data, _ = self.sock.recvfrom(4096)
             segment = STPSegment.from_bytes(data)
 
+            # even if the first syn is dropped it should just start the timer anyway even though technically
+            # it would KNOW it received anythign im just gonna assume they want me to start there
+            if not start_time_initialized:
+                self.start_time = time.time()
+                start_time_initialized = True
+
             if segment.segment_type == 4:
                 if rnd.random() > self.flp:
                     self.log("rcv", 4, 0, 0)
@@ -95,13 +102,16 @@ class Receiver:
                     break
 
             if segment.segment_type == 2:
+                
                 # SYN HANDLE
                 if rnd.random() > self.flp:
                     self.log("rcv", 2, segment.seq_num, 0)
+                    
                     self.sequence = (segment.seq_num + 1) % 2**16
                     self.send_ack(self.sequence)
                     syn_ack_sent = True
                 else:
+                    # dookie syns dont get to start the clock :(((
                     self.log("drp", 2, segment.seq_num, 0)
 
             elif segment.segment_type == 3:
