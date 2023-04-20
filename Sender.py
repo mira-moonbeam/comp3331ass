@@ -1,6 +1,7 @@
 import sys
 import socket
 import time
+import random
 import argparse
 from STPSegment import STPSegment
 import threading
@@ -16,7 +17,7 @@ class Sender:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('localhost', self.sender_port))
         self.sock.settimeout(0.5)
-        self.ISN = 0
+        self.ISN = random.randint(0, 2**16 - 1)
         self.log_file = open("Sender_log.txt", "w")
         self.start_time = None
         self.end_of_transmission = threading.Event()
@@ -71,7 +72,8 @@ class Sender:
                 if segment.segment_type == 1:
                     self.log("rcv", 1, segment.seq_num, 0)
 
-                    self.next_seq_num = self.ISN + 1
+                    self.next_seq_num = (self.ISN + 1) % 2**16
+                    self.window_base = (self.ISN + 1) % 2**16
                     return True
 
             except socket.timeout:
@@ -87,7 +89,7 @@ class Sender:
                 data, _ = self.sock.recvfrom(4096)
                 segment = STPSegment.from_bytes(data)
 
-                if segment.segment_type == 1 and self.next_seq_num + 1 == segment.seq_num:
+                if segment.segment_type == 1 and (self.next_seq_num + 1) % 2**16 == segment.seq_num:
                     self.log("rcv", 1, segment.seq_num, 0)
                     self.fin_ack_received.set()
                     self.end_of_transmission.set()
@@ -96,7 +98,7 @@ class Sender:
                 print("SOCKET TIMEOUT DURING CONNECTION TERMINATION")
                 reset += 1
 
-        self.next_seq_num += 1
+        self.next_seq_num = (self.next_seq_num + 1) % 2**16
         self.connection_terminated.set()
 
     def handle_ack(self):
@@ -117,7 +119,7 @@ class Sender:
                             for seq_num in seq_nums_to_remove:
                                 del self.window[seq_num]
 
-                        if self.next_seq_num + 1 == segment.seq_num:  # Check if FIN-ACK is received
+                        if (self.next_seq_num + 1) % 2**16 == segment.seq_num:  # Check if FIN-ACK is received
                             self.fin_ack_received.set()  # Set the flag for FIN-ACK
 
             except socket.timeout:
@@ -170,8 +172,9 @@ class Sender:
             while True:
                 with self.lock:
                     temp_window = []
+                    
                     # Create all packets in the window
-                    while self.next_seq_num < self.window_base + self.max_win:
+                    while self.next_seq_num < (self.window_base + self.max_win) % 2 ** 16:
                         data_chunk = file.read(1000)
 
                         # Break the loop if the file is completely read
@@ -184,7 +187,7 @@ class Sender:
 
                         # Add the packet to the temporary window
                         temp_window.append((self.next_seq_num, segment))
-                        self.next_seq_num += len(data_chunk)
+                        self.next_seq_num = (self.next_seq_num + len(data_chunk)) % 2**16
 
                     # Send all packets in the temporary window
                     for seq_num, segment in temp_window:

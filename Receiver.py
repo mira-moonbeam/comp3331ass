@@ -81,7 +81,7 @@ class Receiver:
                 # SYN HANDLE
                 if rnd.random() > self.flp:
                     self.log("rcv", 2, segment.seq_num, 0)
-                    self.sequence = segment.seq_num + 1
+                    self.sequence = (segment.seq_num + 1) % 2**16
                     self.send_ack(self.sequence)
                 else:
                     self.log("drp", 2, segment.seq_num, 0)
@@ -102,7 +102,7 @@ class Receiver:
                     with self.buffer_lock:
                         if segment.seq_num == self.sequence:
                             self.buffer[segment.seq_num] = segment.payload
-                            self.sequence += payload_length
+                            self.sequence = (self.sequence + payload_length) % 2**16
                             self.reset_ack_timer()
                         elif segment.seq_num > self.sequence:
                             self.buffer[segment.seq_num] = segment.payload
