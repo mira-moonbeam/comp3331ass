@@ -81,6 +81,12 @@ class Receiver:
             data, _ = self.sock.recvfrom(4096)
             segment = STPSegment.from_bytes(data)
 
+            if segment.segment_type == 4:
+                if rnd.random() > self.flp:
+                    self.log("rcv", 4, 0, 0)
+                    print("RESET FLAG RECEIVED")
+                    break
+
             if segment.segment_type == 2:
                 # SYN HANDLE
                 if rnd.random() > self.flp:
