@@ -27,6 +27,13 @@ class Receiver:
         self.ack_timer = None
         self.ack_timeout = 0.1
 
+        # Tracking variables
+        self.original_data_bytes_received = 0
+        self.original_data_segments_received = 0
+        self.duplicate_data_segments_received = 0
+        self.data_segments_dropped = 0
+        self.ack_segments_dropped = 0
+
     def log(self, snd_rcv, packet_type, seq_num, num_bytes):
         current_time = time.time()
         elapsed_time = round(current_time - self.start_time, 5) if self.start_time is not None else 0
@@ -41,7 +48,7 @@ class Receiver:
         elif packet_type==4:
             pack_type = "RESET"
 
-        log_str = f"{snd_rcv} {elapsed_time}s {pack_type} {seq_num} {num_bytes}\n"
+        log_str = f"{snd_rcv:<3} {elapsed_time:<10} {pack_type:<6} {seq_num:<8} {num_bytes}\n"
         self.log_file.write(log_str)
 
     # DATA = 0, ACK = 1, SYN = 2, FIN = 3, RESET = 4
@@ -51,7 +58,7 @@ class Receiver:
             self.sock.sendto(segment.to_bytes(), ('localhost', self.sender_port))
             self.log("snd", 1, seq_num, 0)
         else:
-            self.log("drp", 1, seq_num, 0)
+            self.ack_segments_dropped += 1
 
     def send_cumulative_ack(self):
         with self.buffer_lock:
@@ -110,18 +117,34 @@ class Receiver:
 
                 if rnd.random() > self.flp:
                     self.log("rcv", 0, segment.seq_num, payload_length)
+
                     with self.buffer_lock:
                         if segment.seq_num == self.sequence:
                             self.buffer[segment.seq_num] = segment.payload
                             self.sequence = (self.sequence + payload_length) % 2**16
                             self.reset_ack_timer()
+
+                            # Update tracking variables
+                            self.original_data_bytes_received += payload_length
+                            self.original_data_segments_received += 1
+
                         elif segment.seq_num > self.sequence:
                             self.buffer[segment.seq_num] = segment.payload
                             self.send_ack(self.sequence)  # Send ACK for the expected sequence number
+
+                            # Update tracking variables
+                            self.duplicate_data_segments_received += 1
+
                         elif segment.seq_num < self.sequence:
                             self.send_ack(self.sequence)
+
+                            # Update tracking variables
+                            self.duplicate_data_segments_received += 1
                 else:
                     self.log("drp", 0, segment.seq_num, payload_length)
+
+                    # Update tracking variables
+                    self.data_segments_dropped += 1
 
 
         if self.ack_timer is not None:
@@ -131,6 +154,12 @@ class Receiver:
             with open(self.file_to_write, 'wb') as file:
                 for _, payload in sorted(self.buffer.items()):
                     file.write(payload)
+    
+    def log_statistics(self):
+        stats = f"\n--- Statistics ---\nOriginal Data Received: {self.original_data_bytes_received}\nOriginal Data Segments Received: {self.original_data_segments_received}\nDuplicate Data Segments Received: {self.duplicate_data_segments_received}\nData Segments Dropped: {self.data_segments_dropped}\nACKs Dropped: {self.ack_segments_dropped}\n"
+        self.log_file.write(stats)
+        self.log_file.flush()
+
 
 
 def main():
@@ -144,6 +173,9 @@ def main():
     args = parser.parse_args()
     receiver = Receiver(args.receiver_port, args.sender_port, args.file_to_write, args.flp, args.rlp)
     receiver.receive_data()
+
+    receiver.log_statistics()
+
     receiver.log_file.close()
 
 if __name__ == "__main__":

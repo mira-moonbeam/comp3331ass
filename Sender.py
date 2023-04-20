@@ -29,6 +29,12 @@ class Sender:
         self.lock = threading.Lock()
         self.window = {}
 
+        # Tracking variables
+        self.original_data_transferred = 0
+        self.data_segments_sent = 0
+        self.retransmitted_data_segments = 0
+        self.duplicate_acks_received = 0
+
     def log(self, snd_rcv, packet_type, seq_num, num_bytes):
         current_time = time.time()
         elapsed_time = round(current_time - self.start_time, 5) if self.start_time is not None else 0
@@ -43,7 +49,8 @@ class Sender:
         elif packet_type==4:
             pack_type = "RESET"
 
-        log_str = f"{snd_rcv} {elapsed_time}s {pack_type} {seq_num} {num_bytes}\n"
+        log_str = f"{snd_rcv:<3} {elapsed_time:<10} {pack_type:<6} {seq_num:<8} {num_bytes}\n"
+
         self.log_file.write(log_str)
         self.log_file.flush()
 
@@ -113,6 +120,7 @@ class Sender:
         self.connection_terminated.set()
 
     def handle_ack(self):
+        last_ack = None
         while not self.connection_terminated.is_set():
             try:
                 data, _ = self.sock.recvfrom(4096)
@@ -129,6 +137,11 @@ class Sender:
                             seq_nums_to_remove = [seq_num for seq_num in list(self.window.keys()) if seq_num < self.window_base]
                             for seq_num in seq_nums_to_remove:
                                 del self.window[seq_num]
+                        
+                        # Track duplicate ACKs
+                        if last_ack is not None and segment.seq_num == last_ack:
+                            self.duplicate_acks_received += 1
+                        last_ack = segment.seq_num
 
                         if (self.next_seq_num + 1) % 2**16 == segment.seq_num:  # Check if FIN-ACK is received
                             self.fin_ack_received.set()  # Set the flag for FIN-ACK
@@ -146,6 +159,9 @@ class Sender:
                 segment, timestamp = self.window[seq_num]
                 if current_time - timestamp > self.rto:
                     with self.lock:
+
+                        self.retransmitted_data_segments += 1
+
                         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
                         self.log("snd", 0, seq_num, len(segment.payload))
                         self.window[seq_num] = (segment, current_time)
@@ -159,6 +175,10 @@ class Sender:
                             if segment.segment_type == 1:
                                 with self.lock:
                                     self.log("rcv", 1, segment.seq_num, 0)
+                                    # Track duplicate ACKs
+                                    if last_ack is not None and segment.seq_num == last_ack:
+                                        self.duplicate_acks_received += 1
+                                    last_ack = segment.seq_num
 
                                     if segment.seq_num >= self.window_base:
                                         self.window_base = segment.seq_num
@@ -172,6 +192,8 @@ class Sender:
                         except socket.timeout:
                             # Resend the packet if ACK is not received
                             with self.lock:
+                                self.retransmitted_data_segments += 1
+
                                 self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
                                 self.log("snd", 0, seq_num, len(segment.payload))
                                 self.window[seq_num] = (segment, current_time)
@@ -180,6 +202,7 @@ class Sender:
 
     def send_data(self):
         with open(self.file_to_send, "rb") as file:
+            data_chunk = None
             while True:
                 with self.lock:
                     temp_window = []
@@ -194,6 +217,8 @@ class Sender:
                             break
 
                         # Create a new data packet
+                        self.original_data_transferred += len(data_chunk)
+                        self.data_segments_sent += 1
                         segment = STPSegment(seq_num=self.next_seq_num, payload=data_chunk)
 
                         # Add the packet to the temporary window
@@ -208,6 +233,10 @@ class Sender:
                         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
                         self.log("snd", 0, seq_num, len(segment.payload))
 
+                        
+                        
+
+
                         # Add the packet to the timer window
                         self.window[seq_num] = (segment, time.time())
                     
@@ -216,8 +245,10 @@ class Sender:
 
         self.end_of_transmission.set()
                         
-
-        
+    def log_statistics(self):
+        stats = f"\n--- Statistics ---\nOriginal Data Transferred: {self.original_data_transferred}\nData Segments Sent: {self.data_segments_sent}\nRetransmitted Data Segments: {self.retransmitted_data_segments}\nDuplicate ACKs Received: {self.duplicate_acks_received}\n"
+        self.log_file.write(stats)
+        self.log_file.flush()
 
     def terminate_on_completion(self):
         self.end_of_transmission.wait()
@@ -251,6 +282,8 @@ def main():
         ack_thread.join()
         send_thread.join()
         termination_thread.join()
+
+        sender.log_statistics()
 
         print("Connection terminated successfully.")
 
