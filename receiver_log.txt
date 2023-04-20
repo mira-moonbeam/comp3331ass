@@ -1,39 +1,27 @@
-rcv 0.01       SYN    25003    0
-snd 0.05       ACK    25004    0
-rcv 2.28       DATA   25004    1000
-drp 2.58       DATA   26004    1000
-rcv 2.84       DATA   27004    1000
-drp 3.1        DATA   28004    1000
-drp 3.36       DATA   29004    1000
-drp 3.6        DATA   30004    519
-snd 102.6      ACK    26004    0
-rcv 303.66     DATA   26004    1000
-drp 504.3      DATA   26004    1000
-drp 704.97     DATA   26004    1000
-drp 905.61     DATA   26004    1000
-rcv 1106.22    DATA   26004    1000
-rcv 1306.89    DATA   26004    1000
-snd 1306.95    ACK    27004    0
-rcv 1307.54    DATA   27004    1000
-drp 1508.1     DATA   27004    1000
-drp 1708.7     DATA   27004    1000
-rcv 1909.37    DATA   27004    1000
-snd 1909.41    ACK    28004    0
-rcv 1909.9     DATA   28004    1000
-snd 2010.2     ACK    29004    0
-drp 2010.97    DATA   29004    1000
-drp 2211.57    DATA   29004    1000
-rcv 2412.26    DATA   29004    1000
-snd 2512.67    ACK    30004    0
-drp 2513.28    DATA   30004    519
-rcv 2714.07    DATA   30004    519
-snd 2814.44    ACK    30523    0
-rcv 2906.97    FIN    30523    0
-snd 2907.05    ACK    30524    0
+rcv 0.0        SYN    49088    0
+snd 0.05       ACK    49089    0
+rcv 2.93       DATA   49089    1000
+rcv 3.28       DATA   50089    1000
+rcv 3.54       DATA   51089    1000
+snd 103.85     ACK    52089    0
+rcv 115.31     DATA   53089    1000
+snd 115.36     ACK    52089    0
+rcv 115.58     DATA   54089    519
+snd 115.6      ACK    52089    0
+rcv 316.76     DATA   52089    1000
+snd 417.16     ACK    53089    0
+rcv 417.59     DATA   53089    1000
+rcv 618.25     DATA   53089    1000
+snd 618.3      ACK    54089    0
+rcv 1020.24    DATA   54089    519
+snd 1120.54    ACK    54608    0
+rcv 1216.86    FIN    54608    0
+rcv 1417.49    FIN    54608    0
+snd 1417.56    ACK    54609    0
 
 --- Statistics ---
 Original Data Received: 5519
 Original Data Segments Received: 6
-Duplicate Data Segments Received: 4
-Data Segments Dropped: 12
-ACKs Dropped: 4
+Duplicate Data Segments Received: 2
+Data Segments Dropped: 0
+ACKs Dropped: 2

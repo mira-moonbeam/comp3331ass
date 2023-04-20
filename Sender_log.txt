@@ -1,38 +1,29 @@
-snd 0          SYN    25003    0
-rcv 0.01       ACK    25004    0
-snd 2.05       DATA   25004    1000
-snd 2.36       DATA   26004    1000
-snd 2.62       DATA   27004    1000
-snd 2.87       DATA   28004    1000
-snd 3.14       DATA   29004    1000
-snd 3.39       DATA   30004    519
-rcv 102.47     ACK    26004    0
-snd 303.42     DATA   26004    1000
-snd 504.05     DATA   26004    1000
-snd 704.66     DATA   26004    1000
-snd 905.37     DATA   26004    1000
-snd 1105.96    DATA   26004    1000
-snd 1306.63    DATA   26004    1000
-rcv 1307.04    ACK    27004    0
-snd 1307.32    DATA   27004    1000
-snd 1507.85    DATA   27004    1000
-snd 1708.46    DATA   27004    1000
-snd 1909.13    DATA   27004    1000
-rcv 1909.43    ACK    28004    0
-snd 1909.68    DATA   28004    1000
-rcv 2010.09    ACK    29004    0
-snd 2010.73    DATA   29004    1000
-snd 2211.32    DATA   29004    1000
-snd 2411.96    DATA   29004    1000
-rcv 2512.5     ACK    30004    0
-snd 2513.04    DATA   30004    519
-snd 2713.81    DATA   30004    519
-rcv 2814.42    ACK    30523    0
-snd 2906.72    FIN    30523    0
-rcv 2906.87    ACK    30524    0
+snd 0          SYN    49088    0
+rcv 0.02       ACK    49089    0
+snd 2.64       DATA   49089    1000
+snd 2.98       DATA   50089    1000
+snd 3.25       DATA   51089    1000
+rcv 113.91     ACK    52089    0
+snd 114.74     DATA   52089    1000
+snd 115.02     DATA   53089    1000
+snd 115.29     DATA   54089    519
+rcv 115.55     ACK    52089    0
+rcv 115.87     ACK    52089    0
+snd 316.45     DATA   52089    1000
+rcv 416.93     ACK    53089    0
+snd 417.29     DATA   53089    1000
+snd 617.92     DATA   53089    1000
+rcv 618.32     ACK    54089    0
+snd 618.66     DATA   54089    519
+snd 819.36     DATA   54089    519
+snd 1019.93    DATA   54089    519
+rcv 1120.36    ACK    54608    0
+snd 1216.54    FIN    54608    0
+snd 1417.18    FIN    54608    0
+rcv 1417.32    ACK    54609    0
 
 --- Statistics ---
 Original Data Transferred: 5519
 Data Segments Sent: 6
-Retransmitted Data Segments: 16
-Duplicate ACKs Received: 0
+Retransmitted Data Segments: 6
+Duplicate ACKs Received: 2

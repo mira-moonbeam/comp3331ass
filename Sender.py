@@ -67,7 +67,7 @@ class Sender:
         self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
 
         self.log("snd", 3, seq_num, 0)
-
+        
     def connection_establish(self):
         start_initialized = False
         reset = 0

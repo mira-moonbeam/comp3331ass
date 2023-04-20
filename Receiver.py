@@ -145,17 +145,6 @@ class Receiver:
                         elif segment.seq_num < self.sequence:
                             self.send_ack(self.sequence)
 
-                            # Update tracking variables
-                            self.duplicate_data_segments_received += 1
-                else:
-                    self.log("drp", 0, segment.seq_num, payload_length)
-
-                    # Update tracking variables
-                    self.data_segments_dropped += 1
-
-        if self.ack_timer is not None:
-            self.ack_timer.cancel()
-
         with self.buffer_lock:
             with open(self.file_to_write, 'wb') as file:
                 for _, payload in sorted(self.buffer.items()):
