@@ -1,35 +1,37 @@
-rcv 0.57201   s SYN    33649    0
-drp 1.07301   s SYN    33649    0
-rcv 1.57404   s SYN    33649    0
-snd 1.57409   s ACK    33650    0
-drp 1.57685   s DATA   33650    1000
-drp 1.57708   s DATA   34650    1000
-rcv 1.57734   s DATA   35650    1000
-rcv 2.08051   s DATA   33650    1000
-snd 2.1809    s ACK    34650    0
-rcv 2.19161   s DATA   34650    1000
-rcv 2.19192   s DATA   36650    1000
-snd 2.19196   s ACK    35650    0
-rcv 2.19245   s DATA   35650    1000
-rcv 2.19286   s DATA   37650    1000
-snd 2.1929    s ACK    36650    0
-drp 2.19364   s DATA   38650    519
-drp 2.69406   s DATA   36650    1000
-rcv 3.19519   s DATA   36650    1000
-snd 3.29549   s ACK    37650    0
-drp 3.29606   s DATA   37650    1000
-drp 3.79694   s DATA   37650    1000
-rcv 4.29806   s DATA   37650    1000
-rcv 4.79938   s DATA   37650    1000
-snd 4.79944   s ACK    38650    0
-rcv 4.80005   s DATA   38650    519
-snd 4.90042   s ACK    39169    0
-rcv 4.99803   s FIN    39169    0
-snd 4.99811   s ACK    39170    0
+rcv 403.24     SYN    54962    0
+rcv 503.86     SYN    54962    0
+rcv 604.58     SYN    54962    0
+snd 604.63     ACK    54963    0
+rcv 606.43     DATA   54963    1000
+rcv 606.66     DATA   55963    1000
+drp 606.87     DATA   56963    1000
+snd 706.93     ACK    56963    0
+rcv 710.57     DATA   54963    1000
+drp 716.31     DATA   56963    1000
+rcv 716.7      DATA   57963    1000
+rcv 716.9      DATA   58963    1000
+drp 821.88     DATA   56963    1000
+rcv 927.51     DATA   56963    1000
+snd 1027.85    ACK    57963    0
+rcv 1038.88    DATA   59963    519
+snd 1038.94    ACK    57963    0
+drp 1039.44    DATA   57963    1000
+drp 1140.05    DATA   57963    1000
+drp 1240.66    DATA   57963    1000
+rcv 1341.14    DATA   57963    1000
+rcv 1441.74    DATA   57963    1000
+snd 1441.77    ACK    58963    0
+rcv 1442.58    DATA   58963    1000
+snd 1542.89    ACK    59963    0
+rcv 1643.56    DATA   59963    519
+snd 1743.89    ACK    60482    0
+drp 1840.18    FIN    60482    0
+rcv 1940.79    FIN    60482    0
+snd 1940.85    ACK    60483    0
 
 --- Statistics ---
 Original Data Received: 5519
 Original Data Segments Received: 6
-Duplicate Data Segments Received: 4
+Duplicate Data Segments Received: 5
 Data Segments Dropped: 6
-ACKs Dropped: 4
+ACKs Dropped: 6

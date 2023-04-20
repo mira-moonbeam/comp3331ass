@@ -36,7 +36,7 @@ class Receiver:
 
     def log(self, snd_rcv, packet_type, seq_num, num_bytes):
         current_time = time.time()
-        elapsed_time = round(current_time - self.start_time, 5) if self.start_time is not None else 0
+        elapsed_time = round((current_time - self.start_time) * 1000, 2) if self.start_time is not None else 0
         pack_type = "DATA"
 
         if packet_type==1:

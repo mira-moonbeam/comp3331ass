@@ -12,11 +12,11 @@ class Sender:
         self.receiver_port = receiver_port
         self.file_to_send = file_to_send
         self.max_win = max_win
-        self.rto = rto
+        self.rto = rto/1000
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('localhost', self.sender_port))
-        self.sock.settimeout(0.5)
+        self.sock.settimeout(self.rto)
         self.ISN = random.randint(0, 2**16 - 1)
         self.log_file = open("Sender_log.txt", "w")
         self.start_time = None
@@ -37,7 +37,7 @@ class Sender:
 
     def log(self, snd_rcv, packet_type, seq_num, num_bytes):
         current_time = time.time()
-        elapsed_time = round(current_time - self.start_time, 5) if self.start_time is not None else 0
+        elapsed_time = round((current_time - self.start_time)*1000, 2) if self.start_time is not None else 0
         pack_type = "DATA"
 
         if packet_type==1:
@@ -84,7 +84,6 @@ class Sender:
                     return True
 
             except socket.timeout:
-                print("SOCKET TIMEOUT DURING CONNECTION ESTABLISHING")
                 reset += 1
 
         segment = STPSegment(seq_num=0, segment_type=4)
