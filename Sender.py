@@ -121,23 +121,56 @@ class Sender:
 
             except socket.timeout:
                 pass
-            
+
             # Retransmit unacknowledged segments
             current_time = time.time()
             window_keys = list(self.window.keys())  # Create a copy of dictionary keys
             for seq_num in window_keys:
+                if seq_num not in self.window:  # Check if the seq_num is still in the window
+                    continue
+
                 segment, timestamp = self.window[seq_num]
                 if current_time - timestamp > self.rto:
-                    self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                    self.log("snd", 0, seq_num, len(segment.payload))
-                    self.window[seq_num] = (segment, current_time)
+                    with self.lock:
+                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                        self.log("snd", 0, seq_num, len(segment.payload))
+                        self.window[seq_num] = (segment, current_time)
+
+                    # Wait for ACK after resending the packet
+                    while True:
+                        try:
+                            data, _ = self.sock.recvfrom(4096)
+                            segment = STPSegment.from_bytes(data)
+
+                            if segment.segment_type == 1:
+                                with self.lock:
+                                    self.log("rcv", 1, segment.seq_num, 0)
+
+                                    if segment.seq_num >= self.window_base:
+                                        self.window_base = segment.seq_num
+
+                                        # Remove acknowledged segments from the window
+                                        seq_nums_to_remove = [seq_num for seq_num in list(self.window.keys()) if seq_num < self.window_base]
+                                        for seq_num in seq_nums_to_remove:
+                                            del self.window[seq_num]
+
+                                    break
+                        except socket.timeout:
+                            # Resend the packet if ACK is not received
+                            with self.lock:
+                                self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                                self.log("snd", 0, seq_num, len(segment.payload))
+                                self.window[seq_num] = (segment, current_time)
+
+
 
     def send_data(self):
         with open(self.file_to_send, "rb") as file:
             while True:
                 with self.lock:
-                    # Send a new packet if the window size is less than the maximum window size
-                    if self.next_seq_num < self.window_base + self.max_win:
+                    temp_window = []
+                    # Create all packets in the window
+                    while self.next_seq_num < self.window_base + self.max_win:
                         data_chunk = file.read(1000)
 
                         # Break the loop if the file is completely read
@@ -148,18 +181,21 @@ class Sender:
                         # Create a new data packet
                         segment = STPSegment(seq_num=self.next_seq_num, payload=data_chunk)
 
-                        # Send the packet
-                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
-                        self.log("snd", 0, self.next_seq_num, len(segment.payload))
-
-                        # Add the packet to the timer window
-                        self.window[self.next_seq_num] = (segment, time.time())
-
-                        # Update the next sequence number
+                        # Add the packet to the temporary window
+                        temp_window.append((self.next_seq_num, segment))
                         self.next_seq_num += len(data_chunk)
 
-                    # Wait for a short duration before trying to send the next packet
-                    time.sleep(0.001)
+                    # Send all packets in the temporary window
+                    for seq_num, segment in temp_window:
+                        if seq_num < self.window_base:
+                            continue
+
+                        self.sock.sendto(segment.to_bytes(), ('localhost', self.receiver_port))
+                        self.log("snd", 0, seq_num, len(segment.payload))
+
+                        # Add the packet to the timer window
+                        self.window[seq_num] = (segment, time.time())
+                        
 
         self.end_of_transmission.set()
 
