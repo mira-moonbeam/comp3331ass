@@ -1,4 +1,5 @@
 import sys
+import select
 import time
 import socket
 import argparse
@@ -62,11 +63,17 @@ class Receiver:
         self.ack_timer = threading.Timer(self.ack_timeout, self.send_cumulative_ack)
         self.ack_timer.start()
 
+
+
     def receive_data(self):
         connection_finished = False
         self.start_time = time.time()
 
-        while not connection_finished:
+        while True:
+            ready_to_read, _, _ = select.select([self.sock], [], [], 2)
+            if not ready_to_read:
+                break  # Exit the loop if there are no incoming packets after 2 seconds please dont ask i googled how to make this thing wait 2 seocnds
+
             data, _ = self.sock.recvfrom(4096)
             segment = STPSegment.from_bytes(data)
 
@@ -84,7 +91,6 @@ class Receiver:
                 if rnd.random() > self.flp:
                     self.log("rcv", 3, segment.seq_num, 0)
                     self.send_ack(segment.seq_num + 1)
-                    connection_finished = True
                 else:
                     self.log("drp", 3, segment.seq_num, 0)
 
@@ -105,6 +111,7 @@ class Receiver:
                             self.send_ack(self.sequence)
                 else:
                     self.log("drp", 0, segment.seq_num, payload_length)
+
 
         if self.ack_timer is not None:
             self.ack_timer.cancel()

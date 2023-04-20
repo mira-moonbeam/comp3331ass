@@ -90,6 +90,7 @@ class Sender:
                 if segment.segment_type == 1 and self.next_seq_num + 1 == segment.seq_num:
                     self.log("rcv", 1, segment.seq_num, 0)
                     self.fin_ack_received.set()
+                    self.end_of_transmission.set()
 
             except socket.timeout:
                 print("SOCKET TIMEOUT DURING CONNECTION TERMINATION")
@@ -195,9 +196,14 @@ class Sender:
 
                         # Add the packet to the timer window
                         self.window[seq_num] = (segment, time.time())
-                        
+                    
+                    if not data_chunk:
+                        break
 
         self.end_of_transmission.set()
+                        
+
+        
 
     def terminate_on_completion(self):
         self.end_of_transmission.wait()
